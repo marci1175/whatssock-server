@@ -1,8 +1,8 @@
-use diesel::{r2d2::ConnectionManager, PgConnection};
+use diesel::{PgConnection, r2d2::ConnectionManager};
 
+pub mod api;
 pub mod models;
 pub mod schema;
-pub mod api;
 
 pub type PgPool = r2d2::Pool<ConnectionManager<PgConnection>>;
 
@@ -19,15 +19,16 @@ pub struct LoginRequest {
 
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub struct LoginResponse {
-    success: bool,
+    username: String,
 }
 
 impl LoginResponse {
-    pub fn new(success: bool) -> Self {
-        Self { success }
+    pub fn new(username: String) -> Self {
+        Self { username }
     }
 }
 
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub struct RegisterRequest {
     username: String,
     password: String,
