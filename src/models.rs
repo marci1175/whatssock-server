@@ -1,3 +1,6 @@
+/// These structs contain all the types which are available for insertion in the db.
+/// lib.rs contains the types which are necessary for the REST API.
+
 use diesel::{
     Selectable,
     prelude::{Insertable, Queryable, QueryableByName},
@@ -11,7 +14,6 @@ pub struct UserAccount {
     pub username: String,
     pub passw: String,
     pub email: String,
-    pub gender: bool,
     pub created_at: chrono::NaiveDate,
 }
 
@@ -22,5 +24,4 @@ pub struct AccountRegister {
     pub username: String,
     pub passw: String,
     pub email: String,
-    pub gender: bool,
 }

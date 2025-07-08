@@ -33,5 +33,4 @@ pub struct RegisterRequest {
     username: String,
     password: String,
     email: String,
-    gender: bool,
 }

@@ -15,9 +15,11 @@ diesel::table! {
         username -> Varchar,
         passw -> Varchar,
         email -> Varchar,
-        gender -> Bool,
         created_at -> Date,
     }
 }
 
-diesel::allow_tables_to_appear_in_same_query!(posts, users,);
+diesel::allow_tables_to_appear_in_same_query!(
+    posts,
+    users,
+);

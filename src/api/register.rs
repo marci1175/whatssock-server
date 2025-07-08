@@ -55,19 +55,19 @@ pub async fn register_user(
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
 
-    if let Some(_count) = users
+    let user_count = users
         .filter(username.eq(information.username.clone()))
         .select(count_star())
         .first::<i64>(&mut pg_connection)
-        .optional()
         .map_err(|err| {
             error!(
                 "An error occured while fetching login information from db: {}",
                 err.to_string()
             );
             StatusCode::REQUEST_TIMEOUT
-        })?
-    {
+        })?;
+
+    if user_count != 0 {
         return Err(StatusCode::FOUND);
     }
 
@@ -76,7 +76,6 @@ pub async fn register_user(
             username: information.username.clone(),
             passw: information.password,
             email: information.email,
-            gender: information.gender,
         })
         .load::<UserAccount>(&mut pg_connection).map_err(|err| {
             error!(

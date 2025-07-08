@@ -4,6 +4,5 @@ CREATE TABLE users (
     username VARCHAR NOT NULL,
     passw VARCHAR NOT NULL,
     email VARCHAR NOT NULL,
-    gender BOOLEAN NOT NULL,
     created_at DATE NOT NULL DEFAULT NOW()
 );
