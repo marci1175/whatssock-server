@@ -1,4 +1,5 @@
 use diesel::{PgConnection, r2d2::ConnectionManager};
+use rand::rngs::ThreadRng;
 
 pub mod api;
 pub mod models;
@@ -19,12 +20,16 @@ pub struct LoginRequest {
 
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub struct LoginResponse {
-    username: String,
+    user_id: i32,
+    session_token: [i16; 16],
 }
 
 impl LoginResponse {
-    pub fn new(username: String) -> Self {
-        Self { username }
+    pub fn new(user_id: i32, session_token: [i16; 16]) -> Self {
+        Self {
+            user_id,
+            session_token,
+        }
     }
 }
 
