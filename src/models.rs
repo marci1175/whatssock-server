@@ -7,7 +7,7 @@ use diesel::{
 #[derive(Debug, Clone, Selectable, QueryableByName, Queryable)]
 #[diesel(table_name = crate::schema::users)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
-pub struct UserAccount {
+pub struct UserAccountEntry {
     pub id: i32,
     pub username: String,
     pub passw: String,
@@ -27,7 +27,7 @@ pub struct NewUserAccount {
 #[derive(Debug, Clone, Selectable, QueryableByName, Queryable)]
 #[diesel(table_name = crate::schema::user_signin_tokens)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
-pub struct UserSession {
+pub struct UserSessionEntry {
     pub token_id: i32,
     pub user_id: i32,
     pub session_token: Vec<u8>,

@@ -1,9 +1,9 @@
 use crate::api::user_account_control::users::dsl::users;
-use crate::models::{NewUserAccount, NewUserSession, UserAccount, UserSession};
+use crate::models::{NewUserAccount, NewUserSession, UserAccountEntry, UserSessionEntry};
 use crate::schema::user_signin_tokens::dsl::user_signin_tokens;
 use crate::schema::user_signin_tokens::{session_token, user_id};
-use crate::schema::users::{passw, username};
-use crate::{schema::*, LoginRequest, LoginResponse, RegisterRequest, ServerState, SessionContinueRequest};
+use crate::schema::users::{id, passw, username};
+use crate::{schema::*, LoginRequest, LoginResponse, RegisterRequest, ServerState, UserSession, UserInformation};
 use axum::{Json, extract::State, http::StatusCode};
 use diesel::dsl::count_star;
 use diesel::query_dsl::methods::{FilterDsl, SelectDsl};
@@ -27,7 +27,7 @@ pub async fn fetch_login(
     let user_account = users
         .filter(username.eq(information.username.clone()))
         .filter(passw.eq(information.password))
-        .select(UserAccount::as_select())
+        .select(UserAccountEntry::as_select())
         .get_result(&mut pg_connection)
         .map_err(|err| {
             error!(
@@ -58,7 +58,7 @@ pub async fn fetch_login(
             user_id: user_account.id,
             session_token: session_cookie_token.clone().to_vec(),
         })
-        .get_result::<UserSession>(&mut pg_connection)
+        .get_result::<UserSessionEntry>(&mut pg_connection)
         .map_err(|err| {
             error!(
                 "An error occured while searching for the user's session token: {}",
@@ -74,7 +74,7 @@ pub async fn fetch_login(
             user_id: user_account.id,
             session_token: session_cookie_token.clone().to_vec(),
         })
-        .get_result::<UserSession>(&mut pg_connection)
+        .get_result::<UserSessionEntry>(&mut pg_connection)
         .map_err(|err| {
             error!(
                 "An error occured while fetching login information from db: {}",
@@ -126,7 +126,7 @@ pub async fn register_user(
             passw: information.password,
             email: information.email,
         })
-        .get_result::<UserAccount>(&mut pg_connection)
+        .get_result::<UserAccountEntry>(&mut pg_connection)
         .map_err(|err| {
             error!(
                 "An error occured while fetching login information from db: {}",
@@ -144,7 +144,7 @@ pub async fn register_user(
             user_id: user_account.id,
             session_token: session_cookie_token.clone().to_vec(),
         })
-        .get_result::<UserSession>(&mut pg_connection)
+        .get_result::<UserSessionEntry>(&mut pg_connection)
         .map_err(|err| {
             error!(
                 "An error occured while fetching login information from db: {}",
@@ -161,8 +161,8 @@ pub async fn register_user(
 
 pub async fn fetch_session_token(
     State(state): State<ServerState>,
-    Json(session_cookie): Json<SessionContinueRequest>,
-) -> Result<(), StatusCode> {
+    Json(session_cookie): Json<UserSession>,
+) -> Result<Json<UserInformation>, StatusCode> {
     // Get a db connection from the pool
     let mut pg_connection = state.pg_pool.get().map_err(|err| {
         error!(
@@ -187,7 +187,15 @@ pub async fn fetch_session_token(
         return Err(StatusCode::NOT_ACCEPTABLE);
     }
 
-    Ok(())
+    let user_account = users.filter(id.eq(session_cookie.user_id)).select(UserAccountEntry::as_select()).first::<UserAccountEntry>(&mut pg_connection).map_err(|err| {
+            error!(
+                "An error occured while fetching user session information from db: {}",
+                err.to_string()
+            );
+            StatusCode::REQUEST_TIMEOUT
+        })?;
+
+    Ok(Json(UserInformation { username: user_account.username }))
 }
 
 pub fn generate_session_token() -> [u8; 32] {
