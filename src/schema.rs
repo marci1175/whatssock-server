@@ -13,7 +13,7 @@ diesel::table! {
     user_signin_tokens (token_id) {
         token_id -> Int4,
         user_id -> Int4,
-        session_token -> Array<Nullable<Int2>>,
+        session_token -> Bytea,
     }
 }
 
@@ -27,4 +27,8 @@ diesel::table! {
     }
 }
 
-diesel::allow_tables_to_appear_in_same_query!(posts, user_signin_tokens, users,);
+diesel::allow_tables_to_appear_in_same_query!(
+    posts,
+    user_signin_tokens,
+    users,
+);

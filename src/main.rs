@@ -8,8 +8,7 @@ use diesel::{
 use dotenvy::dotenv;
 use tokio::net::TcpListener;
 use whatssock_server::{
-    ServerState,
-    api::register::{fetch_login, register_user},
+    api::user_account_control::{fetch_login, fetch_session_token, register_user}, ServerState
 };
 
 #[tokio::main]
@@ -19,8 +18,9 @@ async fn main() -> anyhow::Result<()> {
 
     // Start up the webserver
     let router = Router::new()
-        .route("/api/login", post(fetch_login))
         .route("/api/register", post(register_user))
+        .route("/api/login", post(fetch_login))
+        .route("/api/session", post(fetch_session_token))
         .with_state(servere_state);
 
     let listener = TcpListener::bind("[::1]:3004").await?;
