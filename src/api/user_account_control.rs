@@ -7,8 +7,8 @@ use crate::{schema::*, LoginRequest, LoginResponse, RegisterRequest, ServerState
 use axum::{Json, extract::State, http::StatusCode};
 use diesel::dsl::count_star;
 use diesel::query_dsl::methods::{FilterDsl, SelectDsl};
-use diesel::{ExpressionMethods, OptionalExtension, RunQueryDsl, SelectableHelper, Table};
-use log::error;
+use diesel::{delete, ExpressionMethods, OptionalExtension, RunQueryDsl, SelectableHelper, Table};
+use log::{error, info};
 use rand::{Rng, rng};
 
 pub async fn fetch_login(
@@ -196,6 +196,32 @@ pub async fn fetch_session_token(
         })?;
 
     Ok(Json(UserInformation { username: user_account.username }))
+}
+
+pub async fn handle_logout_request(
+    State(state): State<ServerState>,
+    Json(session_cookie): Json<UserSession>,
+) -> Result<(), StatusCode> {
+    // Get a db connection from the pool
+    let mut pg_connection = state.pg_pool.get().map_err(|err| {
+        error!(
+            "An error occured while fetching login information from db: {}",
+            err.to_string()
+        );
+
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    match delete(user_signin_tokens.filter(session_token.eq(session_cookie.session_token))).execute(&mut pg_connection)  {
+        Ok(r_affected) => {},
+        Err(err) => {
+            error!("{err}");
+
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        },
+    }
+
+    Ok(())
 }
 
 pub fn generate_session_token() -> [u8; 32] {
