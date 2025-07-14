@@ -3,7 +3,7 @@ use crate::models::{NewUserAccount, NewUserSession, UserAccountEntry, UserSessio
 use crate::schema::user_signin_tokens::dsl::user_signin_tokens;
 use crate::schema::user_signin_tokens::{session_token, user_id};
 use crate::schema::users::{id, passw, username};
-use crate::{schema::*, LoginRequest, LoginResponse, RegisterRequest, ServerState, UserSession, UserInformation};
+use crate::{schema::*, LoginRequest, LoginResponse, LogoutReponse, RegisterRequest, ServerState, UserInformation, UserSession};
 use axum::{Json, extract::State, http::StatusCode};
 use diesel::dsl::count_star;
 use diesel::query_dsl::methods::{FilterDsl, SelectDsl};
@@ -201,7 +201,9 @@ pub async fn fetch_session_token(
 pub async fn handle_logout_request(
     State(state): State<ServerState>,
     Json(session_cookie): Json<UserSession>,
-) -> Result<(), StatusCode> {
+) -> Result<Json<LogoutReponse>, StatusCode> {
+    dbg!(&session_cookie);
+
     // Get a db connection from the pool
     let mut pg_connection = state.pg_pool.get().map_err(|err| {
         error!(
@@ -211,9 +213,11 @@ pub async fn handle_logout_request(
 
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
-
+    
     match delete(user_signin_tokens.filter(session_token.eq(session_cookie.session_token))).execute(&mut pg_connection)  {
-        Ok(r_affected) => {},
+        Ok(r_affected) => {
+            dbg!(r_affected);
+        },
         Err(err) => {
             error!("{err}");
 
@@ -221,7 +225,7 @@ pub async fn handle_logout_request(
         },
     }
 
-    Ok(())
+    Ok(Json(LogoutReponse {}))
 }
 
 pub fn generate_session_token() -> [u8; 32] {

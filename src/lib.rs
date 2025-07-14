@@ -51,3 +51,7 @@ pub struct UserSession {
 pub struct UserInformation {
     pub username: String,
 }
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
+pub struct LogoutReponse {
+    
+}
