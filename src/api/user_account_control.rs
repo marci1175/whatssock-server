@@ -1,9 +1,11 @@
 use crate::api::user_account_control::users::dsl::users;
-use crate::models::{NewUserAccount, NewUserSession, UserAccountEntry, UserSessionEntry};
+use crate::schema::chatrooms::{chatroom_id, chatroom_password};
+use crate::schema::chatrooms::dsl::chatrooms;
+use crate::models::{ChatroomEntry, NewUserAccount, NewUserSession, UserAccountEntry, UserSessionEntry};
 use crate::schema::user_signin_tokens::dsl::user_signin_tokens;
 use crate::schema::user_signin_tokens::{session_token, user_id};
 use crate::schema::users::{id, passw, username};
-use crate::{schema::*, LoginRequest, LoginResponse, LogoutReponse, RegisterRequest, ServerState, UserInformation, UserSession};
+use crate::{schema::*, FetchChatroomRequest, FetchChatroomResponse, LoginRequest, LoginResponse, LogoutReponse, RegisterRequest, ServerState, UserInformation, UserSession};
 use axum::{Json, extract::State, http::StatusCode};
 use diesel::dsl::count_star;
 use diesel::query_dsl::methods::{FilterDsl, SelectDsl};
@@ -228,7 +230,50 @@ pub async fn handle_logout_request(
     Ok(Json(LogoutReponse {}))
 }
 
+pub async fn fetch_chatroom_id(
+    State(state): State<ServerState>,
+    Json(chatroom_request): Json<FetchChatroomRequest>
+) -> Result<Json<FetchChatroomResponse>, StatusCode> {
+    // Get a db connection from the pool
+    let mut pg_connection = state.pg_pool.get().map_err(|err| {
+        error!(
+            "An error occured while fetching login information from db: {}",
+            err.to_string()
+        );
+
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    let chatrooms_filter = chatrooms.filter(chatroom_id.eq(chatroom_request.chatroom_id));
+    
+    let query_result: ChatroomEntry = if let Some(password) = chatroom_request.password {
+        let password_filter = chatrooms_filter.filter(chatroom_password.eq(password));
+
+        password_filter.select(ChatroomEntry::as_select()).first(&mut pg_connection).map_err(|err| {
+            error!(
+                "An error occured while fetching chatrooms from db: {}",
+                err.to_string()
+            );
+
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?
+    }
+    else {
+        chatrooms_filter.select(ChatroomEntry::as_select()).first(&mut pg_connection).map_err(|err| {
+            error!(
+                "An error occured while fetching chatrooms from db: {}",
+                err.to_string()
+            );
+
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?
+    };
+
+    Ok(Json(FetchChatroomResponse { chatroom_id: query_result.chatroom_id, chatroom_name: query_result.chatroom_name, participants: query_result.participants, is_direct_message: query_result.is_direct_message, last_message_id: query_result.last_message_id }))
+} 
+
 pub fn generate_session_token() -> [u8; 32] {
+
     let mut rng = rng();
 
     let mut custom_identifier = [0 as u8; 32];

@@ -55,3 +55,20 @@ pub struct UserInformation {
 pub struct LogoutReponse {
     
 }
+
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
+pub struct FetchChatroomRequest {
+    pub user_session: UserSession,
+    pub chatroom_id: String,
+    pub password: Option<String>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
+pub struct FetchChatroomResponse {
+    pub chatroom_id: String,
+    pub chatroom_name: String,
+    /// The reason it is an option is because this is what diesel returns
+    pub participants: Vec<Option<i32>>,
+    pub is_direct_message: bool,
+    pub last_message_id: Option<i32>,
+}

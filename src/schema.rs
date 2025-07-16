@@ -4,7 +4,11 @@ diesel::table! {
     chatrooms (id) {
         id -> Int4,
         chatroom_id -> Varchar,
-        participants -> Nullable<Array<Nullable<Int4>>>,
+        chatroom_name -> Varchar,
+        chatroom_password -> Nullable<Varchar>,
+        participants -> Array<Nullable<Int4>>,
+        is_direct_message -> Bool,
+        last_message_id -> Nullable<Int4>,
     }
 }
 

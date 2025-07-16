@@ -40,3 +40,25 @@ pub struct NewUserSession {
     pub user_id: i32,
     pub session_token: Vec<u8>,
 }
+
+#[derive(Debug, Clone, Selectable, QueryableByName, Queryable)]
+#[diesel(table_name = crate::schema::chatrooms)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
+pub struct ChatroomEntry {
+    pub id: i32,
+    pub chatroom_id: String,
+    pub chatroom_name: String,
+    pub participants: Vec<Option<i32>>,
+    pub is_direct_message: bool,
+    pub last_message_id: Option<i32>
+}
+
+#[derive(Debug, Clone, Insertable)]
+#[diesel(table_name = crate::schema::chatrooms)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
+pub struct NewChatroom {
+    pub chatroom_id: String,
+    pub participants: Vec<i32>,
+    pub is_direct_message: bool,
+    pub last_message_id: Option<i32>,
+}
