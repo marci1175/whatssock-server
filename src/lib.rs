@@ -19,15 +19,17 @@ pub struct LoginRequest {
 
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub struct LoginResponse {
-    user_id: i32,
-    session_token: [u8; 32],
+    pub user_id: i32,
+    pub session_token: [u8; 32],
+    pub chatrooms_joined: Vec<Option<i32>>,
 }
 
 impl LoginResponse {
-    pub fn new(user_id: i32, session_token: [u8; 32]) -> Self {
+    pub fn new(user_id: i32, session_token: [u8; 32], chatrooms_joined: Vec<Option<i32>>) -> Self {
         Self {
             user_id,
             session_token,
+            chatrooms_joined,
         }
     }
 }
@@ -40,7 +42,7 @@ pub struct RegisterRequest {
 }
 
 /// This is a UserSession on the Clientside its only named differently cuz of the other struct's naming.
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
 pub struct UserSession {
     user_id: i32,
     session_token: [u8; 32],
@@ -50,20 +52,26 @@ pub struct UserSession {
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub struct UserInformation {
     pub username: String,
-}
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
-pub struct LogoutReponse {
-    
+    chatrooms_joined: Vec<Option<i32>>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
-pub struct FetchChatroomRequest {
+pub struct LogoutReponse {}
+
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
+pub struct FetchUnknownChatroom {
     pub user_session: UserSession,
     pub chatroom_id: String,
     pub password: Option<String>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
+pub struct FetchKnownChatrooms {
+    pub user_session: UserSession,
+    pub chatroom_uids: Vec<i32>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
 pub struct FetchChatroomResponse {
     pub chatroom_id: String,
     pub chatroom_name: String,
@@ -71,4 +79,16 @@ pub struct FetchChatroomResponse {
     pub participants: Vec<Option<i32>>,
     pub is_direct_message: bool,
     pub last_message_id: Option<i32>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
+pub struct CreateChatroomRequest {
+    pub user_session: UserSession,
+    pub chatroom_name: String,
+    pub chatroom_passw: Option<String>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
+pub struct FetchKnownChatroomResponse {
+    pub chatrooms: Vec<FetchChatroomResponse>,
 }

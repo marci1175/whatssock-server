@@ -45,6 +45,7 @@ diesel::table! {
         username -> Varchar,
         passw -> Varchar,
         email -> Varchar,
+        chatrooms_joined -> Array<Nullable<Int4>>,
         created_at -> Date,
     }
 }

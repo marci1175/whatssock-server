@@ -1,7 +1,8 @@
 /// These structs contain all the types which are available for insertion in the db.
 /// lib.rs contains the types which are necessary for the REST API.
 use diesel::{
-    prelude::{AsChangeset, Insertable, Queryable, QueryableByName}, Selectable
+    Selectable,
+    prelude::{AsChangeset, Insertable, Queryable, QueryableByName},
 };
 
 #[derive(Debug, Clone, Selectable, QueryableByName, Queryable)]
@@ -12,6 +13,7 @@ pub struct UserAccountEntry {
     pub username: String,
     pub passw: String,
     pub email: String,
+    pub chatrooms_joined: Vec<Option<i32>>,
     pub created_at: chrono::NaiveDate,
 }
 
@@ -21,6 +23,7 @@ pub struct UserAccountEntry {
 pub struct NewUserAccount {
     pub username: String,
     pub passw: String,
+    pub chatrooms_joined: Vec<Option<i32>>,
     pub email: String,
 }
 
@@ -48,9 +51,10 @@ pub struct ChatroomEntry {
     pub id: i32,
     pub chatroom_id: String,
     pub chatroom_name: String,
+    pub chatroom_password: Option<String>,
     pub participants: Vec<Option<i32>>,
     pub is_direct_message: bool,
-    pub last_message_id: Option<i32>
+    pub last_message_id: Option<i32>,
 }
 
 #[derive(Debug, Clone, Insertable)]
@@ -58,6 +62,8 @@ pub struct ChatroomEntry {
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct NewChatroom {
     pub chatroom_id: String,
+    pub chatroom_name: String,
+    pub chatroom_password: Option<String>,
     pub participants: Vec<i32>,
     pub is_direct_message: bool,
     pub last_message_id: Option<i32>,

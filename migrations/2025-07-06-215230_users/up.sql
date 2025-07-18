@@ -4,5 +4,6 @@ CREATE TABLE users (
     username VARCHAR NOT NULL,
     passw VARCHAR NOT NULL,
     email VARCHAR NOT NULL,
+    chatrooms_joined INT[] NOT NULL,
     created_at DATE NOT NULL DEFAULT NOW()
 );

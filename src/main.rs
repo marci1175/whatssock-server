@@ -8,11 +8,15 @@ use diesel::{
 use dotenvy::dotenv;
 use tokio::net::TcpListener;
 use whatssock_server::{
-    api::user_account_control::{fetch_chatroom_id, fetch_login, fetch_session_token, handle_logout_request, register_user}, ServerState
+    api::user_account_control::{
+        create_chatroom, fetch_known_chatrooms, fetch_login, fetch_session_token, fetch_unknown_chatroom, handle_logout_request, register_user
+    }, ServerState
 };
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    env_logger::init();
+
     // Establish connection with the database
     let servere_state = establish_state()?;
 
@@ -22,7 +26,12 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/login", post(fetch_login))
         .route("/api/session", post(fetch_session_token))
         .route("/api/logout", post(handle_logout_request))
-        .route("/api/chatroom_id", post(fetch_chatroom_id))
+        .route(
+            "/api/request_unknown_chatroom",
+            post(fetch_unknown_chatroom),
+        )
+        .route("/api/request_known_chatroom", post(fetch_known_chatrooms))
+        .route("/api/chatroom_new", post(create_chatroom))
         .with_state(servere_state);
 
     let listener = TcpListener::bind("[::1]:3004").await?;
