@@ -8,18 +8,22 @@ use crate::schema::user_signin_tokens::dsl::user_signin_tokens;
 use crate::schema::user_signin_tokens::{session_token, user_id};
 use crate::schema::users::{chatrooms_joined, id, passw, username};
 use crate::{
-    CreateChatroomRequest, FetchChatroomResponse, FetchKnownChatroomResponse, FetchKnownChatrooms,
-    FetchUnknownChatroom, LoginRequest, LoginResponse, LogoutReponse, RegisterRequest, ServerState,
-    UserInformation, UserSession,
+    ServerState,
     schema::{self, *},
 };
 use axum::{Json, extract::State, http::StatusCode};
 use diesel::dsl::count_star;
 use diesel::query_dsl::methods::{FilterDsl, SelectDsl};
-use diesel::{ExpressionMethods, OptionalExtension, RunQueryDsl, SelectableHelper, Table, delete};
-use log::{error, info};
+use diesel::{ExpressionMethods, RunQueryDsl, SelectableHelper, delete};
+use log::error;
 use rand::distr::Uniform;
 use rand::{Rng, rng};
+use whatssock_lib::client::{LoginRequest, RegisterRequest, UserInformation};
+use whatssock_lib::server::{LoginResponse, LogoutResponse};
+use whatssock_lib::{
+    ChatMessage, CreateChatroomRequest, FetchChatroomResponse, FetchKnownChatroomResponse,
+    FetchKnownChatrooms, FetchUnknownChatroom, UserSession,
+};
 
 pub async fn fetch_login(
     State(state): State<ServerState>,
@@ -28,7 +32,7 @@ pub async fn fetch_login(
     let mut pg_connection = state.pg_pool.get().map_err(|err| {
         error!(
             "An error occured while fetching login information from db: {}",
-            err.to_string()
+            err
         );
 
         StatusCode::INTERNAL_SERVER_ERROR
@@ -42,7 +46,7 @@ pub async fn fetch_login(
         .map_err(|err| {
             error!(
                 "An error occured while searching for the user's account: {}",
-                err.to_string()
+                err
             );
 
             StatusCode::NOT_FOUND
@@ -58,7 +62,7 @@ pub async fn fetch_login(
         .map_err(|err| {
             error!(
                 "An error occured while searching for the user's session token: {}",
-                err.to_string()
+                err
             );
 
             StatusCode::INTERNAL_SERVER_ERROR
@@ -78,7 +82,7 @@ pub async fn fetch_login(
             .map_err(|err| {
                 error!(
                     "An error occured while searching for the user's session token: {}",
-                    err.to_string()
+                    err
                 );
 
                 StatusCode::INTERNAL_SERVER_ERROR
@@ -93,7 +97,7 @@ pub async fn fetch_login(
             .map_err(|err| {
                 error!(
                     "An error occured while fetching login information from db: {}",
-                    err.to_string()
+                    err
                 );
                 StatusCode::INTERNAL_SERVER_ERROR
             })?;
@@ -113,7 +117,7 @@ pub async fn register_user(
     let mut pg_connection = state.pg_pool.get().map_err(|err| {
         error!(
             "An error occured while fetching login information from db: {}",
-            err.to_string()
+            err
         );
 
         StatusCode::INTERNAL_SERVER_ERROR
@@ -126,7 +130,7 @@ pub async fn register_user(
         .map_err(|err| {
             error!(
                 "An error occured while fetching login information from db: {}",
-                err.to_string()
+                err
             );
             StatusCode::REQUEST_TIMEOUT
         })?;
@@ -147,7 +151,7 @@ pub async fn register_user(
         .map_err(|err| {
             error!(
                 "An error occured while fetching login information from db: {}",
-                err.to_string()
+                err
             );
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
@@ -165,7 +169,7 @@ pub async fn register_user(
         .map_err(|err| {
             error!(
                 "An error occured while fetching login information from db: {}",
-                err.to_string()
+                err
             );
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
@@ -185,7 +189,7 @@ pub async fn fetch_session_token(
     let mut pg_connection = state.pg_pool.get().map_err(|err| {
         error!(
             "An error occured while fetching login information from db: {}",
-            err.to_string()
+            err
         );
 
         StatusCode::INTERNAL_SERVER_ERROR
@@ -200,7 +204,7 @@ pub async fn fetch_session_token(
         .map_err(|err| {
             error!(
                 "An error occured while fetching user session information from db: {}",
-                err.to_string()
+                err
             );
             StatusCode::REQUEST_TIMEOUT
         })?;
@@ -217,7 +221,7 @@ pub async fn fetch_session_token(
         .map_err(|err| {
             error!(
                 "An error occured while fetching user session information from db: {}",
-                err.to_string()
+                err
             );
             StatusCode::REQUEST_TIMEOUT
         })?;
@@ -231,14 +235,12 @@ pub async fn fetch_session_token(
 pub async fn handle_logout_request(
     State(state): State<ServerState>,
     Json(session_cookie): Json<UserSession>,
-) -> Result<Json<LogoutReponse>, StatusCode> {
-    dbg!(&session_cookie);
-
+) -> Result<Json<LogoutResponse>, StatusCode> {
     // Get a db connection from the pool
     let mut pg_connection = state.pg_pool.get().map_err(|err| {
         error!(
             "An error occured while fetching login information from db: {}",
-            err.to_string()
+            err
         );
 
         StatusCode::INTERNAL_SERVER_ERROR
@@ -257,7 +259,7 @@ pub async fn handle_logout_request(
         }
     }
 
-    Ok(Json(LogoutReponse {}))
+    Ok(Json(LogoutResponse {}))
 }
 
 pub async fn fetch_unknown_chatroom(
@@ -268,7 +270,7 @@ pub async fn fetch_unknown_chatroom(
     let mut pg_connection = state.pg_pool.get().map_err(|err| {
         error!(
             "An error occured while fetching login information from db: {}",
-            err.to_string()
+            err
         );
 
         StatusCode::INTERNAL_SERVER_ERROR
@@ -283,10 +285,7 @@ pub async fn fetch_unknown_chatroom(
             .select(ChatroomEntry::as_select())
             .first(&mut pg_connection)
             .map_err(|err| {
-                error!(
-                    "An error occured while fetching chatrooms from db: {}",
-                    err.to_string()
-                );
+                error!("An error occured while fetching chatrooms from db: {}", err);
 
                 StatusCode::INTERNAL_SERVER_ERROR
             })?
@@ -295,16 +294,14 @@ pub async fn fetch_unknown_chatroom(
             .select(ChatroomEntry::as_select())
             .first(&mut pg_connection)
             .map_err(|err| {
-                error!(
-                    "An error occured while fetching chatrooms from db: {}",
-                    err.to_string()
-                );
+                error!("An error occured while fetching chatrooms from db: {}", err);
 
                 StatusCode::INTERNAL_SERVER_ERROR
             })?
     };
 
     Ok(Json(FetchChatroomResponse {
+        chatroom_uid: query_result.id,
         chatroom_id: query_result.chatroom_id,
         chatroom_name: query_result.chatroom_name,
         participants: query_result.participants,
@@ -321,7 +318,7 @@ pub async fn fetch_known_chatrooms(
     let mut pg_connection = state.pg_pool.get().map_err(|err| {
         error!(
             "An error occured while fetching login information from db: {}",
-            err.to_string()
+            err
         );
 
         StatusCode::INTERNAL_SERVER_ERROR
@@ -339,7 +336,7 @@ pub async fn fetch_known_chatrooms(
         .map_err(|err| {
             error!(
                 "An error occured while verifying login information from db: {}",
-                err.to_string()
+                err
             );
 
             StatusCode::INTERNAL_SERVER_ERROR
@@ -357,10 +354,7 @@ pub async fn fetch_known_chatrooms(
             .filter(schema::chatrooms::id.eq(chatroom_request))
             .get_result::<ChatroomEntry>(&mut pg_connection)
             .map_err(|err| {
-                error!(
-                    "An error occured while fetching chatrooms from db: {}",
-                    err.to_string()
-                );
+                error!("An error occured while fetching chatrooms from db: {}", err);
 
                 StatusCode::INTERNAL_SERVER_ERROR
             })?;
@@ -375,6 +369,7 @@ pub async fn fetch_known_chatrooms(
         }
 
         verified_chatrooms_reponses.push(FetchChatroomResponse {
+            chatroom_uid: chatroom_entry.id,
             chatroom_id: chatroom_entry.chatroom_id,
             chatroom_name: chatroom_entry.chatroom_name,
             participants: chatroom_entry.participants,
@@ -396,7 +391,7 @@ pub async fn create_chatroom(
     let mut pg_connection = state.pg_pool.get().map_err(|err| {
         error!(
             "An error occured while fetching login information from db: {}",
-            err.to_string()
+            err
         );
 
         StatusCode::INTERNAL_SERVER_ERROR
@@ -405,7 +400,6 @@ pub async fn create_chatroom(
     let generated_chatroom_id: String = rand::rng()
         .sample_iter(&Uniform::new(char::from(32), char::from(126)).unwrap())
         .take(10)
-        .map(char::from)
         .collect();
 
     let chatroom_entry: ChatroomEntry = diesel::insert_into(chatrooms)
@@ -420,10 +414,7 @@ pub async fn create_chatroom(
         })
         .get_result(&mut pg_connection)
         .map_err(|err| {
-            error!(
-                "An error occured while creating a new chatroom: {}",
-                err.to_string()
-            );
+            error!("An error occured while creating a new chatroom: {}", err);
 
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
@@ -434,8 +425,7 @@ pub async fn create_chatroom(
         .map_err(|err| {
             error!(
                 "An error occured while fetching user account with id {}: {}",
-                chatroom_request.user_session.user_id,
-                err.to_string()
+                chatroom_request.user_session.user_id, err
             );
 
             StatusCode::INTERNAL_SERVER_ERROR
@@ -449,14 +439,14 @@ pub async fn create_chatroom(
         .map_err(|err| {
             error!(
                 "An error occured while fetching user account with id {}: {}",
-                chatroom_request.user_session.user_id,
-                err.to_string()
+                chatroom_request.user_session.user_id, err
             );
 
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
 
     Ok(Json(FetchChatroomResponse {
+        chatroom_uid: chatroom_entry.id,
         chatroom_id: chatroom_entry.chatroom_id,
         chatroom_name: chatroom_entry.chatroom_name,
         participants: chatroom_entry.participants,
@@ -468,9 +458,15 @@ pub async fn create_chatroom(
 pub fn generate_session_token() -> [u8; 32] {
     let mut rng = rng();
 
-    let mut custom_identifier = [0 as u8; 32];
+    let mut custom_identifier = [0_u8; 32];
 
     rng.fill(&mut custom_identifier);
 
     custom_identifier
+}
+
+pub async fn handle_incoming_chatroom_message(
+    State(state): State<ServerState>,
+    Json(chatroom_request): Json<ChatMessage>,
+) {
 }

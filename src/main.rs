@@ -8,9 +8,11 @@ use diesel::{
 use dotenvy::dotenv;
 use tokio::net::TcpListener;
 use whatssock_server::{
+    ServerState,
     api::user_account_control::{
-        create_chatroom, fetch_known_chatrooms, fetch_login, fetch_session_token, fetch_unknown_chatroom, handle_logout_request, register_user
-    }, ServerState
+        create_chatroom, fetch_known_chatrooms, fetch_login, fetch_session_token,
+        fetch_unknown_chatroom, handle_logout_request, register_user,
+    },
 };
 
 #[tokio::main]
@@ -32,6 +34,7 @@ async fn main() -> anyhow::Result<()> {
         )
         .route("/api/request_known_chatroom", post(fetch_known_chatrooms))
         .route("/api/chatroom_new", post(create_chatroom))
+        .route("/api/chatroom_send_message", post(create_chatroom))
         .with_state(servere_state);
 
     let listener = TcpListener::bind("[::1]:3004").await?;
